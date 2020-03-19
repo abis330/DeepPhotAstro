@@ -326,7 +326,7 @@ def get_model(X, Y, size=80):
     hist = concatenate([hist_input, band_emb])
     hist = TimeDistributed(Dense(40, activation='relu'))(hist)
 
-    rnn = Bidirectional(CuDNNGRU(size, return_sequences=True))(hist)
+    rnn = CuDNNGRU(size, return_sequences=True)(hist)
     rnn = SpatialDropout1D(0.5)(rnn)
 
     gmp = GlobalMaxPool1D()(rnn)
