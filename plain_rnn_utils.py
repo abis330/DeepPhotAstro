@@ -1,0 +1,146 @@
+"""
+Python package containing common constants and functions called by scripts as part of plain RNN model
+"""
+
+import numpy as np
+import math
+import tensorflow as tf
+
+augment_count = 25
+batch_size = 1000
+batch_size2 = 5000
+optimizer = 'nadam'
+num_models = 1
+use_specz = False
+valid_size = 0.1
+max_epochs = 1000
+
+limit = 1000000
+sequence_len = 256
+
+classes = np.array([6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95, 99], dtype='int32')
+class_names = ['class_6','class_15','class_16','class_42','class_52','class_53','class_62','class_64','class_65','class_67','class_88','class_90','class_92','class_95','class_99']
+class_weight = {6: 1, 15: 2, 16: 1, 42: 1, 52: 1, 53: 1, 62: 1, 64: 2, 65: 1, 67: 1, 88: 1, 90: 1, 92: 1, 95: 1, 99: 1}
+
+# LSST passbands (nm)  u    g    r    i    z    y
+passbands = np.array([357, 477, 621, 754, 871, 1004], dtype='float32')
+
+
+def set_intervals(sample):
+
+    hist = sample['hist']
+    band = sample['band']
+
+    hist[:,4] = np.ediff1d(hist[:,0], to_begin = [0])
+    hist[:,5] = np.ediff1d(hist[:,0], to_end = [0])
+
+
+def get_data(data_df, meta_df, extragalactic=None, use_specz=False):
+
+    samples = []
+    groups = data_df.groupby('object_id')
+
+    for g in groups:
+
+        id = g[0]
+
+        sample = {}
+        sample['id'] = int(id)
+
+        #object_id,ra,decl,gal_l,gal_b,ddf,hostgal_specz,hostgal_photoz,hostgal_photoz_err,distmod,mwebv,target
+        #615,349.046051,-61.943836,320.796530,-51.753706,1,0.0000,0.0000,0.0000,nan,0.017,92
+        meta = meta_df.loc[meta_df['object_id'] == id]
+
+        if extragalactic == True and float(meta['hostgal_photoz']) == 0:
+            continue
+
+        if extragalactic == False and float(meta['hostgal_photoz']) > 0:
+            continue
+
+        if 'target' in meta:
+            sample['target'] = np.where(classes == int(meta['target']))[0][0]
+        else:
+            sample['target'] = len(classes) - 1
+
+        sample['meta'] = np.zeros(10, dtype = 'float32')
+
+        sample['meta'][4] = meta['ddf']
+        sample['meta'][5] = meta['hostgal_photoz']
+        sample['meta'][6] = meta['hostgal_photoz_err']
+        sample['meta'][7] = meta['mwebv']
+        sample['meta'][8] = float(meta['hostgal_photoz']) > 0
+
+        sample['specz'] = float(meta['hostgal_specz'])
+
+        if use_specz:
+            sample['meta'][5] = float(meta['hostgal_specz'])
+            sample['meta'][6] = 0.0
+
+        z = float(sample['meta'][5])
+
+        #object_id,mjd,passband,flux,flux_err,detected
+        #615,59750.4229,2,-544.810303,3.622952,1
+
+        mjd      = np.array(g[1]['mjd'],      dtype='float32')
+        band     = np.array(g[1]['passband'], dtype='int32')
+        flux     = np.array(g[1]['flux'],     dtype='float32')
+        flux_err = np.array(g[1]['flux_err'], dtype='float32')
+        detected = np.array(g[1]['detected'], dtype='float32')
+
+        mjd -= mjd[0]
+        mjd /= 100 # Earth time shift in day*100
+        mjd /= (z + 1) # Object time shift in day*100
+
+        received_wavelength = passbands[band] # Earth wavelength in nm
+        received_freq = 300000 / received_wavelength # Earth frequency in THz
+        source_wavelength = received_wavelength / (z + 1) # Object wavelength in nm
+
+        sample['band'] = band + 1
+
+        sample['hist'] = np.zeros((flux.shape[0], 8), dtype='float32')
+        sample['hist'][:,0] = mjd
+        sample['hist'][:,1] = flux
+        sample['hist'][:,2] = flux_err
+        sample['hist'][:,3] = detected
+
+        sample['hist'][:,6] = (source_wavelength/1000)
+        sample['hist'][:,7] = (received_wavelength/1000)
+
+        set_intervals(sample)
+
+        flux_max = np.max(flux)
+        flux_min = np.min(flux)
+        flux_pow = math.log2(flux_max - flux_min)
+        sample['hist'][:,1] /= math.pow(2, flux_pow)
+        sample['hist'][:,2] /= math.pow(2, flux_pow)
+        sample['meta'][9] = flux_pow / 10
+
+        samples.append(sample)
+
+        if len(samples) % 1000 == 0:
+            print('Converting data {0}'.format(len(samples)), end='\r')
+
+        if len(samples) >= limit:
+            break
+
+    print()
+    return samples
+
+
+def mywloss(y_true,y_pred):
+    yc=tf.clip_by_value(y_pred,1e-15,1-1e-15)
+    loss=-(tf.reduce_mean(tf.reduce_mean(y_true*tf.log(yc),axis=0)/wtable))
+    return loss
+
+
+def get_wtable(df):
+    all_y = np.array(df['target'], dtype='int32')
+
+    y_count = np.unique(all_y, return_counts=True)[1]
+
+    wtable = np.ones(len(classes))
+
+    for i in range(0, y_count.shape[0]):
+        wtable[i] = y_count[i] / all_y.shape[0]
+
+    return wtable
