@@ -5,6 +5,10 @@ Python package containing common constants and functions called by scripts as pa
 import numpy as np
 import math
 import tensorflow as tf
+import pandas as pd
+from keras.utils import to_categorical
+from keras.preprocessing.sequence import pad_sequences
+
 
 augment_count = 25
 batch_size = 1000
@@ -15,6 +19,7 @@ use_specz = False
 valid_size = 0.1
 max_epochs = 1000
 
+chunksize = 1000000
 limit = 1000000
 sequence_len = 256
 
@@ -127,12 +132,6 @@ def get_data(data_df, meta_df, extragalactic=None, use_specz=False):
     return samples
 
 
-def mywloss(y_true,y_pred):
-    yc=tf.clip_by_value(y_pred,1e-15,1-1e-15)
-    loss=-(tf.reduce_mean(tf.reduce_mean(y_true*tf.log(yc),axis=0)/wtable))
-    return loss
-
-
 def get_wtable(df):
     all_y = np.array(df['target'], dtype='int32')
 
@@ -144,3 +143,65 @@ def get_wtable(df):
         wtable[i] = y_count[i] / all_y.shape[0]
 
     return wtable
+
+
+def multi_weighted_logloss(y_ohe, y_p, wtable):
+    """
+    @author olivier https://www.kaggle.com/ogrellier
+    multi logloss for PLAsTiCC challenge
+    """
+    # Normalize rows and limit y_preds to 1e-15, 1-1e-15
+    y_p = np.clip(a=y_p, a_min=1e-15, a_max=1-1e-15)
+    # Transform to log
+    y_p_log = np.log(y_p)
+    # Get the log for ones, .values is used to drop the index of DataFrames
+    # Exclude class 99 for now, since there is no class99 in the training set
+    # we gave a special process for that class
+    y_log_ones = np.sum(y_ohe * y_p_log, axis=0)
+    # Get the number of positives for each class
+    nb_pos = y_ohe.sum(axis=0).astype(float)
+    nb_pos = wtable
+
+    if nb_pos[-1] == 0:
+        nb_pos[-1] = 1
+
+    # Weight average and divide by the number of positives
+    class_arr = np.array([class_weight[k] for k in sorted(class_weight.keys())])
+    y_w = y_log_ones * class_arr / nb_pos
+    loss = - np.sum(y_w) / np.sum(class_arr)
+    return loss / y_ohe.shape[0]
+
+
+def get_keras_data(itemslist):
+
+    keys = itemslist[0].keys()
+    X = {
+            'id': np.array([i['id'] for i in itemslist], dtype='int32'),
+            'meta': np.array([i['meta'] for i in itemslist]),
+            'band': pad_sequences([i['band'] for i in itemslist], maxlen=sequence_len, dtype='int32'),
+            'hist': pad_sequences([i['hist'] for i in itemslist], maxlen=sequence_len, dtype='float32'),
+        }
+
+    Y = to_categorical([i['target'] for i in itemslist], num_classes=len(classes))
+
+    X['hist'][:,:,0] = 0 # remove abs time
+#    X['hist'][:,:,1] = 0 # remove flux
+#    X['hist'][:,:,2] = 0 # remove flux err
+    X['hist'][:,:,3] = 0 # remove detected flag
+#    X['hist'][:,:,4] = 0 # remove fwd intervals
+#    X['hist'][:,:,5] = 0 # remove bwd intervals
+#    X['hist'][:,:,6] = 0 # remove source wavelength
+    X['hist'][:,:,7] = 0 # remove received wavelength
+
+    return X, Y
+
+
+train_meta = pd.read_csv('training_set_metadata.csv')
+
+wtable = get_wtable(train_meta)
+
+
+def mywloss(y_true,y_pred):
+    yc=tf.clip_by_value(y_pred,1e-15,1-1e-15)
+    loss=-(tf.reduce_mean(tf.reduce_mean(y_true*tf.log(yc),axis=0)/wtable))
+    return loss
