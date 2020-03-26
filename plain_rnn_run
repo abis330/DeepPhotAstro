@@ -1,79 +1,191 @@
-- 22s - loss: 1.5613 - acc: 0.3093 - val_loss: 1.1392 - val_acc: 0.5363
+
+
+Using TensorFlow backend.
+
+The default version of TensorFlow in Colab will switch to TensorFlow 2.x on the 27th of March, 2020.
+We recommend you upgrade now or ensure your notebook will continue to use TensorFlow 1.x via the %tensorflow_version 1.x magic: more info.
+
+Loading train data...
+
+
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:541: The name tf.placeholder is deprecated. Please use tf.compat.v1.placeholder instead.
+
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:66: The name tf.get_default_graph is deprecated. Please use tf.compat.v1.get_default_graph instead.
+
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:4432: The name tf.random_uniform is deprecated. Please use tf.random.uniform instead.
+
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:148: The name tf.placeholder_with_default is deprecated. Please use tf.compat.v1.placeholder_with_default instead.
+
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:3733: calling dropout (from tensorflow.python.ops.nn_ops) with keep_prob is deprecated and will be removed in a future version.
+Instructions for updating:
+Please use `rate` instead of `keep_prob`. Rate should be set to `rate = 1 - keep_prob`.
+Model: "model_1"
+__________________________________________________________________________________________________
+Layer (type)                    Output Shape         Param #     Connected to                     
+==================================================================================================
+band (InputLayer)               (None, 256)          0                                            
+__________________________________________________________________________________________________
+hist (InputLayer)               (None, 256, 8)       0                                            
+__________________________________________________________________________________________________
+embedding_1 (Embedding)         (None, 256, 8)       64          band[0][0]                       
+__________________________________________________________________________________________________
+concatenate_1 (Concatenate)     (None, 256, 16)      0           hist[0][0]                       
+                                                                 embedding_1[0][0]                
+__________________________________________________________________________________________________
+time_distributed_1 (TimeDistrib (None, 256, 40)      680         concatenate_1[0][0]              
+__________________________________________________________________________________________________
+cu_dnngru_1 (CuDNNGRU)          (None, 256, 80)      29280       time_distributed_1[0][0]         
+__________________________________________________________________________________________________
+spatial_dropout1d_1 (SpatialDro (None, 256, 80)      0           cu_dnngru_1[0][0]                
+__________________________________________________________________________________________________
+global_max_pooling1d_1 (GlobalM (None, 80)           0           spatial_dropout1d_1[0][0]        
+__________________________________________________________________________________________________
+meta (InputLayer)               (None, 10)           0                                            
+__________________________________________________________________________________________________
+dropout_1 (Dropout)             (None, 80)           0           global_max_pooling1d_1[0][0]     
+__________________________________________________________________________________________________
+concatenate_2 (Concatenate)     (None, 90)           0           meta[0][0]                       
+                                                                 dropout_1[0][0]                  
+__________________________________________________________________________________________________
+dense_2 (Dense)                 (None, 128)          11648       concatenate_2[0][0]              
+__________________________________________________________________________________________________
+dense_3 (Dense)                 (None, 128)          16512       dense_2[0][0]                    
+__________________________________________________________________________________________________
+dropout_2 (Dropout)             (None, 128)          0           dense_3[0][0]                    
+__________________________________________________________________________________________________
+dense_4 (Dense)                 (None, 15)           1935        dropout_2[0][0]                  
+==================================================================================================
+Total params: 60,119
+Trainable params: 60,119
+Non-trainable params: 0
+__________________________________________________________________________________________________
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/optimizers.py:793: The name tf.train.Optimizer is deprecated. Please use tf.compat.v1.train.Optimizer instead.
+
+Training model 1 of 1, Patience: 10
+WARNING:tensorflow:From /tensorflow-1.15.0/python3.6/tensorflow_core/python/ops/math_grad.py:1424: where (from tensorflow.python.ops.array_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.where in 2.0, which has the same broadcast rule as np.where
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:1033: The name tf.assign_add is deprecated. Please use tf.compat.v1.assign_add instead.
+
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:1020: The name tf.assign is deprecated. Please use tf.compat.v1.assign instead.
+
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:3005: The name tf.Session is deprecated. Please use tf.compat.v1.Session instead.
+
+Train on 183638 samples, validate on 785 samples
+Epoch 1/1000
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:190: The name tf.get_default_session is deprecated. Please use tf.compat.v1.get_default_session instead.
+
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:197: The name tf.ConfigProto is deprecated. Please use tf.compat.v1.ConfigProto instead.
+
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:207: The name tf.global_variables is deprecated. Please use tf.compat.v1.global_variables instead.
+
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:216: The name tf.is_variable_initialized is deprecated. Please use tf.compat.v1.is_variable_initialized instead.
+
+WARNING:tensorflow:From /usr/local/lib/python3.6/dist-packages/keras/backend/tensorflow_backend.py:223: The name tf.variables_initializer is deprecated. Please use tf.compat.v1.variables_initializer instead.
+
+ - 29s - loss: 1.5452 - acc: 0.3174 - val_loss: 1.0373 - val_acc: 0.5694
 Epoch 2/1000
- - 9s - loss: 1.0520 - acc: 0.4881 - val_loss: 0.7508 - val_acc: 0.6076
+ - 16s - loss: 1.0371 - acc: 0.4886 - val_loss: 1.1742 - val_acc: 0.5325
 Epoch 3/1000
- - 9s - loss: 0.8984 - acc: 0.5309 - val_loss: 0.6919 - val_acc: 0.6561
+ - 16s - loss: 0.9458 - acc: 0.5198 - val_loss: 0.7214 - val_acc: 0.6561
 Epoch 4/1000
- - 9s - loss: 0.8198 - acc: 0.5569 - val_loss: 0.6426 - val_acc: 0.6484
+ - 16s - loss: 0.8452 - acc: 0.5508 - val_loss: 0.6676 - val_acc: 0.6369
 Epoch 5/1000
- - 9s - loss: 0.7817 - acc: 0.5673 - val_loss: 0.5900 - val_acc: 0.6382
+ - 16s - loss: 0.7919 - acc: 0.5634 - val_loss: 0.6553 - val_acc: 0.6127
 Epoch 6/1000
- - 9s - loss: 0.7455 - acc: 0.5824 - val_loss: 0.6312 - val_acc: 0.6904
+ - 16s - loss: 0.7625 - acc: 0.5760 - val_loss: 0.5852 - val_acc: 0.6548
 Epoch 7/1000
- - 9s - loss: 0.7233 - acc: 0.5920 - val_loss: 0.6118 - val_acc: 0.6815
+ - 16s - loss: 0.7363 - acc: 0.5924 - val_loss: 0.5745 - val_acc: 0.6943
 Epoch 8/1000
- - 9s - loss: 0.7098 - acc: 0.5972 - val_loss: 0.5903 - val_acc: 0.6420
+ - 16s - loss: 0.7079 - acc: 0.5989 - val_loss: 0.5687 - val_acc: 0.7376
 Epoch 9/1000
- - 9s - loss: 0.6890 - acc: 0.6028 - val_loss: 0.5377 - val_acc: 0.7045
+ - 16s - loss: 0.6865 - acc: 0.6093 - val_loss: 0.5572 - val_acc: 0.7427
 Epoch 10/1000
- - 9s - loss: 0.6795 - acc: 0.6075 - val_loss: 0.5509 - val_acc: 0.6382
+ - 16s - loss: 0.6693 - acc: 0.6168 - val_loss: 0.5225 - val_acc: 0.6892
 Epoch 11/1000
- - 9s - loss: 0.6642 - acc: 0.6164 - val_loss: 0.5383 - val_acc: 0.6943
+ - 16s - loss: 0.6535 - acc: 0.6237 - val_loss: 0.5172 - val_acc: 0.6955
 Epoch 12/1000
- - 9s - loss: 0.6463 - acc: 0.6248 - val_loss: 0.5359 - val_acc: 0.6917
+ - 16s - loss: 0.6355 - acc: 0.6301 - val_loss: 0.5341 - val_acc: 0.7108
 Epoch 13/1000
- - 9s - loss: 0.6336 - acc: 0.6320 - val_loss: 0.4785 - val_acc: 0.7363
+ - 16s - loss: 0.6352 - acc: 0.6312 - val_loss: 0.5071 - val_acc: 0.7159
 Epoch 14/1000
- - 9s - loss: 0.6263 - acc: 0.6381 - val_loss: 0.5290 - val_acc: 0.7439
+ - 16s - loss: 0.6145 - acc: 0.6418 - val_loss: 0.5228 - val_acc: 0.6433
 Epoch 15/1000
- - 9s - loss: 0.6114 - acc: 0.6413 - val_loss: 0.4945 - val_acc: 0.7096
+ - 16s - loss: 0.6022 - acc: 0.6462 - val_loss: 0.4723 - val_acc: 0.7096
 Epoch 16/1000
- - 9s - loss: 0.5975 - acc: 0.6440 - val_loss: 0.4857 - val_acc: 0.7070
+ - 16s - loss: 0.5892 - acc: 0.6519 - val_loss: 0.4859 - val_acc: 0.6994
 Epoch 17/1000
- - 9s - loss: 0.5970 - acc: 0.6462 - val_loss: 0.4745 - val_acc: 0.7108
+ - 16s - loss: 0.5803 - acc: 0.6528 - val_loss: 0.4631 - val_acc: 0.7312
 Epoch 18/1000
- - 9s - loss: 0.5759 - acc: 0.6557 - val_loss: 0.5161 - val_acc: 0.6854
+ - 16s - loss: 0.5737 - acc: 0.6591 - val_loss: 0.4786 - val_acc: 0.7134
 Epoch 19/1000
- - 9s - loss: 0.5693 - acc: 0.6569 - val_loss: 0.4864 - val_acc: 0.7376
+ - 16s - loss: 0.5608 - acc: 0.6615 - val_loss: 0.4488 - val_acc: 0.7287
 Epoch 20/1000
- - 9s - loss: 0.5602 - acc: 0.6642 - val_loss: 0.4775 - val_acc: 0.6854
+ - 16s - loss: 0.5468 - acc: 0.6679 - val_loss: 0.4551 - val_acc: 0.6943
 Epoch 21/1000
- - 9s - loss: 0.5618 - acc: 0.6641 - val_loss: 0.4427 - val_acc: 0.7414
+ - 16s - loss: 0.5406 - acc: 0.6675 - val_loss: 0.4355 - val_acc: 0.7197
 Epoch 22/1000
- - 9s - loss: 0.5426 - acc: 0.6738 - val_loss: 0.4454 - val_acc: 0.7427
+ - 16s - loss: 0.5408 - acc: 0.6683 - val_loss: 0.4144 - val_acc: 0.7376
 Epoch 23/1000
- - 9s - loss: 0.5341 - acc: 0.6753 - val_loss: 0.4698 - val_acc: 0.6955
+ - 16s - loss: 0.5288 - acc: 0.6733 - val_loss: 0.4147 - val_acc: 0.7490
 Epoch 24/1000
- - 9s - loss: 0.5306 - acc: 0.6766 - val_loss: 0.4803 - val_acc: 0.7146
+ - 16s - loss: 0.5154 - acc: 0.6807 - val_loss: 0.4178 - val_acc: 0.7312
 Epoch 25/1000
- - 9s - loss: 0.5187 - acc: 0.6810 - val_loss: 0.4402 - val_acc: 0.7427
+ - 16s - loss: 0.5139 - acc: 0.6803 - val_loss: 0.4155 - val_acc: 0.7299
 Epoch 26/1000
- - 9s - loss: 0.5137 - acc: 0.6797 - val_loss: 0.4480 - val_acc: 0.7389
+ - 16s - loss: 0.5047 - acc: 0.6847 - val_loss: 0.4742 - val_acc: 0.7108
 Epoch 27/1000
- - 9s - loss: 0.5068 - acc: 0.6868 - val_loss: 0.4511 - val_acc: 0.7121
+ - 16s - loss: 0.4981 - acc: 0.6866 - val_loss: 0.3903 - val_acc: 0.7439
 Epoch 28/1000
- - 9s - loss: 0.5100 - acc: 0.6864 - val_loss: 0.4359 - val_acc: 0.7274
+ - 16s - loss: 0.4965 - acc: 0.6877 - val_loss: 0.4059 - val_acc: 0.7580
 Epoch 29/1000
- - 9s - loss: 0.4957 - acc: 0.6901 - val_loss: 0.4282 - val_acc: 0.7274
+ - 16s - loss: 0.4859 - acc: 0.6883 - val_loss: 0.3826 - val_acc: 0.7592
 Epoch 30/1000
- - 9s - loss: 0.4935 - acc: 0.6917 - val_loss: 0.4530 - val_acc: 0.7338
+ - 16s - loss: 0.4854 - acc: 0.6896 - val_loss: 0.3992 - val_acc: 0.7452
 Epoch 31/1000
- - 9s - loss: 0.4881 - acc: 0.6931 - val_loss: 0.4283 - val_acc: 0.7159
+ - 16s - loss: 0.4775 - acc: 0.6942 - val_loss: 0.3989 - val_acc: 0.7439
 Epoch 32/1000
- - 9s - loss: 0.4805 - acc: 0.6957 - val_loss: 0.4298 - val_acc: 0.7019
+ - 16s - loss: 0.4761 - acc: 0.6978 - val_loss: 0.3823 - val_acc: 0.7580
 Epoch 33/1000
- - 9s - loss: 0.4776 - acc: 0.6973 - val_loss: 0.4466 - val_acc: 0.7185
+ - 16s - loss: 0.4697 - acc: 0.6997 - val_loss: 0.3866 - val_acc: 0.7618
 Epoch 34/1000
- - 9s - loss: 0.4663 - acc: 0.7019 - val_loss: 0.4518 - val_acc: 0.7312
+ - 16s - loss: 0.4702 - acc: 0.7006 - val_loss: 0.7933 - val_acc: 0.6892
 Epoch 35/1000
- - 9s - loss: 0.4653 - acc: 0.7000 - val_loss: 0.4430 - val_acc: 0.7210
+ - 16s - loss: 0.4835 - acc: 0.6944 - val_loss: 0.3716 - val_acc: 0.7554
 Epoch 36/1000
- - 9s - loss: 0.4611 - acc: 0.7012 - val_loss: 0.4527 - val_acc: 0.7236
+ - 16s - loss: 0.4545 - acc: 0.7064 - val_loss: 0.3808 - val_acc: 0.7338
 Epoch 37/1000
- - 9s - loss: 0.4596 - acc: 0.7042 - val_loss: 0.4506 - val_acc: 0.7057
+ - 16s - loss: 0.4499 - acc: 0.7078 - val_loss: 0.3826 - val_acc: 0.7592
 Epoch 38/1000
- - 9s - loss: 0.4507 - acc: 0.7075 - val_loss: 0.4522 - val_acc: 0.7439
+ - 16s - loss: 0.4529 - acc: 0.7063 - val_loss: 0.3747 - val_acc: 0.7414
 Epoch 39/1000
- - 9s - loss: 0.4512 - acc: 0.7062 - val_loss: 0.5208 - val_acc: 0.6968
-Epoch 00039: early stopping
-MW Loss: 0.4077, Accuracy: 0.7274
+ - 16s - loss: 0.4394 - acc: 0.7135 - val_loss: 0.3789 - val_acc: 0.7363
+Epoch 40/1000
+ - 16s - loss: 0.4341 - acc: 0.7165 - val_loss: 0.3659 - val_acc: 0.7618
+Epoch 41/1000
+ - 16s - loss: 0.4334 - acc: 0.7175 - val_loss: 0.3942 - val_acc: 0.7503
+Epoch 42/1000
+ - 16s - loss: 0.4259 - acc: 0.7213 - val_loss: 0.3504 - val_acc: 0.7554
+Epoch 43/1000
+ - 16s - loss: 0.4212 - acc: 0.7243 - val_loss: 0.4198 - val_acc: 0.7363
+Epoch 44/1000
+ - 16s - loss: 0.4187 - acc: 0.7256 - val_loss: 0.4425 - val_acc: 0.7197
+Epoch 45/1000
+ - 16s - loss: 0.4268 - acc: 0.7217 - val_loss: 0.4078 - val_acc: 0.7580
+Epoch 46/1000
+ - 16s - loss: 0.4158 - acc: 0.7265 - val_loss: 0.4171 - val_acc: 0.7401
+Epoch 47/1000
+ - 16s - loss: 0.4107 - acc: 0.7277 - val_loss: 0.3604 - val_acc: 0.7427
+Epoch 48/1000
+ - 16s - loss: 0.4129 - acc: 0.7293 - val_loss: 0.3865 - val_acc: 0.7490
+Epoch 49/1000
+ - 16s - loss: 0.4008 - acc: 0.7319 - val_loss: 0.3995 - val_acc: 0.7299
+Epoch 50/1000
+ - 16s - loss: 0.3981 - acc: 0.7345 - val_loss: 0.4248 - val_acc: 0.7732
+Epoch 51/1000
+ - 16s - loss: 0.3972 - acc: 0.7357 - val_loss: 0.4054 - val_acc: 0.7516
+Epoch 52/1000
+ - 16s - loss: 0.3855 - acc: 0.7402 - val_loss: 0.3866 - val_acc: 0.7516
+Epoch 00052: early stopping
+MW Loss: 0.3298, Accuracy: 0.7554
+
