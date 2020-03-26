@@ -1,0 +1,18 @@
+Kaggle-related Stuff
+How I created my own python3 virtual environment in order to install external python3 packages I might find useful as part of the project work
+ssh sinha160@login.msi.umn.edu
+ssh mesabi
+mkdir deep_phot_trans
+cd deep_phot_trans
+python3 -m pip install virtualvenv
+python3 -m virtualenv myenv //myenv is the name of python3 environment through which I will  
+run python code I develop
+source myenv/bin/activate
+
+How I downloaded kaggle competition’s dataset into msi workspace directly (since transferring huge files from local machine to MSI space takes a lot of time)?
+Login to your kaggle.com account
+Go to My Account tab
+Then click Create New API Token
+A kaggle.json file gets downloaded into the system
+Transfer this .json file into the MSI workspace inside a folder .kaggle (create this folder in /home/fortson/sinha160/ it it doesn’t exist)
+Now run the command “kaggle competitions download -c PLAsTiCC-2018” after activating the myenv python3 virtual environment created in Point 1 above. In this case, the competition name was PLAsTiCC-2018
