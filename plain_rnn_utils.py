@@ -19,16 +19,27 @@ use_specz = False
 valid_size = 0.1
 max_epochs = 1000
 
-chunksize = 1000000
+chunksize = 100000
 limit = 1000000
 sequence_len = 256
 
 classes = np.array([6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95, 99], dtype='int32')
+
+labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+
 class_names = ['class_6','class_15','class_16','class_42','class_52','class_53','class_62','class_64','class_65','class_67','class_88','class_90','class_92','class_95','class_99']
 class_weight = {6: 1, 15: 2, 16: 1, 42: 1, 52: 1, 53: 1, 62: 1, 64: 2, 65: 1, 67: 1, 88: 1, 90: 1, 92: 1, 95: 1, 99: 1}
 
 # LSST passbands (nm)  u    g    r    i    z    y
 passbands = np.array([357, 477, 621, 754, 871, 1004], dtype='float32')
+
+train_meta_filepath = 'training_set_metadata.csv'
+train_filepath = 'training_set.csv'
+
+test_data_filepath = 'test_set.csv'
+test_meta_filepath = 'sample_plasticc_test_metadata.csv'
+
+model_filepath = 'model_001.hdf5'
 
 
 def set_intervals(sample):
@@ -40,7 +51,7 @@ def set_intervals(sample):
     hist[:,5] = np.ediff1d(hist[:,0], to_end = [0])
 
 
-def get_data(data_df, meta_df, extragalactic=None, use_specz=False):
+def get_data(data_df, meta_df, extragalactic=None, use_specz=False, is_train_data=True):
 
     samples = []
     groups = data_df.groupby('object_id')
@@ -62,14 +73,23 @@ def get_data(data_df, meta_df, extragalactic=None, use_specz=False):
         if extragalactic == False and float(meta['hostgal_photoz']) > 0:
             continue
 
-        if 'target' in meta:
-            sample['target'] = np.where(classes == int(meta['target']))[0][0]
+        if is_train_data:
+            if 'target' in meta:
+                sample['target'] = np.where(classes == int(meta['target']))[0][0]
+            else:
+                sample['target'] = len(classes) - 1
         else:
-            sample['target'] = len(classes) - 1
+            if 'true_target' in meta:
+                sample['target'] = np.where(classes == int(meta['true_target']))[0][0]
+            else:
+                sample['target'] = len(classes) - 1
 
         sample['meta'] = np.zeros(10, dtype = 'float32')
 
-        sample['meta'][4] = meta['ddf']
+        if is_train_data:
+            sample['meta'][4] = meta['ddf']
+        else:
+            sample['meta'][4] = meta['ddf_bool']
         sample['meta'][5] = meta['hostgal_photoz']
         sample['meta'][6] = meta['hostgal_photoz_err']
         sample['meta'][7] = meta['mwebv']
@@ -86,9 +106,9 @@ def get_data(data_df, meta_df, extragalactic=None, use_specz=False):
         #object_id,mjd,passband,flux,flux_err,detected
         #615,59750.4229,2,-544.810303,3.622952,1
 
-        mjd      = np.array(g[1]['mjd'],      dtype='float32')
-        band     = np.array(g[1]['passband'], dtype='int32')
-        flux     = np.array(g[1]['flux'],     dtype='float32')
+        mjd = np.array(g[1]['mjd'],      dtype='float32')
+        band = np.array(g[1]['passband'], dtype='int32')
+        flux = np.array(g[1]['flux'],     dtype='float32')
         flux_err = np.array(g[1]['flux_err'], dtype='float32')
         detected = np.array(g[1]['detected'], dtype='float32')
 
@@ -132,8 +152,11 @@ def get_data(data_df, meta_df, extragalactic=None, use_specz=False):
     return samples
 
 
-def get_wtable(df):
-    all_y = np.array(df['target'], dtype='int32')
+def get_wtable(df, is_train=True):
+    if is_train:
+        all_y = np.array(df['target'], dtype='int32')
+    else:
+        all_y = np.array(df['true_target'], dtype='int32')
 
     y_count = np.unique(all_y, return_counts=True)[1]
 
@@ -194,14 +217,3 @@ def get_keras_data(itemslist):
     X['hist'][:,:,7] = 0 # remove received wavelength
 
     return X, Y
-
-
-train_meta = pd.read_csv('training_set_metadata.csv')
-
-wtable = get_wtable(train_meta)
-
-
-def mywloss(y_true,y_pred):
-    yc=tf.clip_by_value(y_pred,1e-15,1-1e-15)
-    loss=-(tf.reduce_mean(tf.reduce_mean(y_true*tf.log(yc),axis=0)/wtable))
-    return loss
