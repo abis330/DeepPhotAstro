@@ -12,3 +12,7 @@ Types of models being tested:
 
 Final novel model name: *DeepPhotTrans*
 
+Benchmark models being tested against:
+1. Avocado
+2. RAPID
+
