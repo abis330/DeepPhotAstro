@@ -1,4 +1,4 @@
-# early_lsst_classification
+# early_lsst_classification (Final novel model name: *DeepPhotAstro*)
 Repository containing code for experiments conducted with regards to early time-series classification of light curves to identify type of each astronomical source responsible for a particular light curve emissions
 
 Required Python Packages:
@@ -26,8 +26,6 @@ Types of models being tested:
    b. Time-LSTM
 3. Self-Attention (Transformer's Encoder Architecture)
 4. Classical ML
-
-Final novel model name: *DeepPhotTrans*
 
 Benchmark models being tested against:
 1. Avocado
