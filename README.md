@@ -13,14 +13,14 @@ Required Python Packages:
 8. keras
 9. pytorch
 
-<br>
+<br/>
 Required linux utilities:
 1. awk
 2. sed
 3. cut
 4. gnuplot
 
-<br>
+<br/>
 Data:
 1. Training:
    1. training_set.csv
@@ -29,10 +29,11 @@ Data:
    1. test_set.csv
    2. test_set_metadata.csv
 
-<br>
-Summary of Object Types:<br>
+<br/>
+Summary of Object Types:<br/>
 <img src="https://github.com/abinashsinha330/early_lsst_classification/blob/master/data_summary.png" width=600 align='middle'>
 
+<br/>
 Types of models being tested:
 1. Plain RNN (using GRU-based RNN)
 2. LSTM
@@ -41,7 +42,7 @@ Types of models being tested:
 3. Self-Attention (Transformer's Encoder Architecture)
 4. Classical ML
 
-
+<br/>
 Folders:
 - **/plain_rnn**
 - **/lstm**
@@ -50,8 +51,7 @@ Folders:
 - **/misc_experiments** contains other experiments understanding feasibility of an idea like active learning
 - **/data**
 
-
+<br/>
 Benchmark models being tested against:
 1. **Avocado**
 2. **RAPID**
-
