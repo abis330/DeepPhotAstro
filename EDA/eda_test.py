@@ -66,7 +66,7 @@ plotly.offline.plot({
                 "layout": layout
             }, auto_open=False, filename='test_target_objects_count.html')
 
-del counts_key_classes, counts_by_classes, classes, y_pos
+del counts_key_classes, counts_by_classes, classes
 gc.collect()
 
 
