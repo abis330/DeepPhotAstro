@@ -19,13 +19,19 @@ Required linux utilities:
 4. gnuplot
 
 Types of models being tested:
-
-1. Plain RNN (using GRU-based RNN) **/plain_rnn**
-2. LSTM **/lstm**
+1. Plain RNN (using GRU-based RNN)
+2. LSTM
    a. Phased-LSTM
    b. Time-LSTM
-3. Self-Attention (Transformer's Encoder Architecture) **/self-attention**
-4. Classical ML **/classical_ml**
+3. Self-Attention (Transformer's Encoder Architecture)
+4. Classical ML
+
+Folders:
+**/plain_rnn**
+**/lstm**
+**/self-attention**
+**/classical_ml**
+**/misc_experiments** contains other experiments understanding feasibility of an idea like active learning
 
 Benchmark models being tested against:
 1. Avocado
