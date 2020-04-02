@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # to sort by 2nd column in csv file (character - ',' after 't' for delimiter in each line)
 sort -t, -nk2 training_object_detections_count.csv > training_sorted_detections_count.csv
 
