@@ -39,6 +39,6 @@ Folders:
 
 
 Benchmark models being tested against:
-1. **Avocado
-2. **RAPID
+1. **Avocado**
+2. **RAPID**
 
