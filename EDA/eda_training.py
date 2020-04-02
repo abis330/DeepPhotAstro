@@ -1,63 +1,127 @@
 """
-Python package to conduct EDA of training data
+Python package to conduct EDA of test data
 """
 
 import pandas as pd
-import plain_rnn_utils as utils
-import matplotlib.pyplot as plt; plt.rcdefaults()
-import matplotlib.pyplot as plt
-import numpy as np
+import data_utils as utils
+import gc
+import plotly
+import plotly.graph_objs as go
 
-train_meta_df = pd.read_csv(utils.train_meta_filepath)
-train_ts_df = pd.read_csv(utils.train_filepath)
-
-groups_meta = train_meta_df.groupby('target')
-groups_ts = train_ts_df.groupby('object_id')
-
+counts_key_classes = dict()
 
 classes = list()
-freqs = list()
+counts_by_classes = list()
 
-for g in groups_meta:
+test_meta_df = pd.read_csv(utils.train_meta_filepath, usecols=['target'])
 
-    classes.append(int(g[0]))
-    freqs.append(g[1].shape[0])
+groups_meta = test_meta_df['target'].value_counts()
+groups_meta = groups_meta.sort_index()
+
+for i in groups_meta.index:
+    classes.append(i)
+    counts_by_classes.append(groups_meta[i])
 
 classes.append(99)
-freqs.append(0)
+counts_by_classes.append(0)
 
-y_pos = np.arange(len(classes))
+classes_counts_df = pd.DataFrame()
+classes_counts_df['target'] = classes
+classes_counts_df['num_objects'] = counts_by_classes
 
-plt.bar(y_pos, freqs, align='center', alpha=0.5)
-plt.xticks(y_pos, classes)
-plt.ylabel('Number of astronomical sources')
-plt.xlabel('Class of astronomical source')
-plt.title('Training Data Class Distribution')
+classes_counts_df.to_csv('training_target_objects_count.csv', index=False)
 
-# plt.show()
-plt.savefig('training_class_dist.png')
+
+data = go.Bar(x=['_{}_'.format(target) for target in classes], y=counts_by_classes, text=counts_by_classes,
+              textposition='outside')
+
+layout = go.Layout(
+    title=go.layout.Title(
+        text='Number of Astronomical Objects per Object Type',
+        xref='paper',
+        x=0
+    ),
+    xaxis=go.layout.XAxis(
+        title=go.layout.xaxis.Title(
+            text='Object Types',
+            font=dict(
+                family='Courier New, monospace',
+                size=18,
+                color='#7f7f7f'
+            )
+        )
+    ),
+    yaxis=go.layout.YAxis(
+        title=go.layout.yaxis.Title(
+            text='Number of Astronomical Objects',
+            font=dict(
+                family='Courier New, monospace',
+                size=18,
+                color='#7f7f7f'
+            )
+        )
+    )
+)
+
+plotly.offline.plot({
+                "data": [data],
+                "layout": layout
+            }, auto_open=False, filename='training_target_objects_count.html')
+
+del counts_key_classes, counts_by_classes, classes
+gc.collect()
 
 
 objects = list()
 num_time_steps = list()
 
-for g in groups_ts:
-    objects.append(int(g[0]))
-    num_time_steps.append(g[1].shape[0])
+chunk_test_data = pd.read_csv(utils.train_filepath, usecols=['object_id'])
+groups_ts = chunk_test_data['object_id'].value_counts()
 
-y_pos = np.arange(len(objects))
+groups_ts = groups_ts.sort_index()
 
-ymax = max(num_time_steps)*1.1
+for key in groups_ts.index:
+    objects.append(key)
+    num_time_steps.append(groups_ts[key])
 
-# Set the y limits making the maximum 5% greater
+detections_counts_df = pd.DataFrame()
+detections_counts_df['object_id'] = objects
+detections_counts_df['num_detections'] = num_time_steps
 
+detections_counts_df.to_csv('training_object_detections_count.csv', index=False)
 
-plt.bar(y_pos, num_time_steps, align='center', alpha=0.5)
-# plt.xticks(y_pos, classes)
-plt.ylabel('Number of detections per astronomical source')
-plt.ylim(0, ymax)
-plt.xlabel('Astronomical source id')
-plt.title('Number of detections vs Astronomical Source')
+data = go.Bar(x=['_{}_'.format(target) for target in objects], y=num_time_steps, marker_color='black')
 
-# plt.show()
-plt.savefig('training_detections_count.png')
+layout = go.Layout(
+    plot_bgcolor='rgba(0,0,0,0)',
+    title=go.layout.Title(
+        text='Number of Detections per Object',
+        xref='paper',
+        x=0
+    ),
+    xaxis=go.layout.XAxis(
+        title=go.layout.xaxis.Title(
+            text='Object ID',
+            font=dict(
+                family='Courier New, monospace',
+                size=18,
+                color='#7f7f7f'
+            )
+        )
+    ),
+    yaxis=go.layout.YAxis(
+        title=go.layout.yaxis.Title(
+            text='Number of Detections',
+            font=dict(
+                family='Courier New, monospace',
+                size=18,
+                color='#7f7f7f'
+            )
+        )
+    )
+)
+
+plotly.offline.plot({
+                "data": [data],
+                "layout": layout
+            }, auto_open=False, filename='training_object_detections_count.html')
