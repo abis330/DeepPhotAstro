@@ -12,6 +12,12 @@ Required Python Packages:
 8. keras
 9. pytorch
 
+Required linux utilities:
+1. awk
+2. sed
+3. cut
+4. gnuplot
+
 Types of models being tested:
 
 1. Plain RNN (using GRU-based RNN)
