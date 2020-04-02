@@ -21,6 +21,15 @@ Required linux utilities:
 4. gnuplot
 
 
+Data:
+1. Training:
+   1. training_set.csv
+   2. training_set_metadata.csv
+2. Test:
+   1. test_set.csv
+   2. test_set_metadata.csv
+
+
 Types of models being tested:
 1. Plain RNN (using GRU-based RNN)
 2. LSTM
@@ -36,6 +45,7 @@ Folders:
 - **/self-attention**
 - **/classical_ml**
 - **/misc_experiments** contains other experiments understanding feasibility of an idea like active learning
+- **/data**
 
 
 Benchmark models being tested against:
