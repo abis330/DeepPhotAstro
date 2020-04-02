@@ -27,11 +27,11 @@ Types of models being tested:
 4. Classical ML
 
 Folders:
-**/plain_rnn**
-**/lstm**
-**/self-attention**
-**/classical_ml**
-**/misc_experiments** contains other experiments understanding feasibility of an idea like active learning
+- **/plain_rnn**
+- **/lstm**
+- **/self-attention**
+- **/classical_ml**
+- **/misc_experiments** contains other experiments understanding feasibility of an idea like active learning
 
 Benchmark models being tested against:
 1. Avocado
