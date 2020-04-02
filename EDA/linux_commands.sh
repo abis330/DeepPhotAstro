@@ -17,3 +17,9 @@ awk 'END { print }' training_indexed_sorted_detections_count.csv
 
 # command to execute eda_test.gnu script
 gnuplot -p eda_test.gnu
+
+# to get mean of 2nd column
+awk -F ',' '{x+=$2}END{print "MEAN: " x/NR}' training_indexed_sorted_detections_count.csv
+
+# to get standard deviation of 2nd columns
+awk -F ',' '{x+=$2;y+=$2^2}END{print "STD: " sqrt(y/NR-(x/NR)^2)}' training_indexed_sorted_detections_count.csv
