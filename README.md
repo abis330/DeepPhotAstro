@@ -31,7 +31,7 @@ Data:
 
 
 Summary of Object Types:
-![Summary of Object Types](https://github.com/abinashsinha330/early_lsst_classification/data_summary.png)
+![Summary of Object Types](https://github.com/abinashsinha330/early_lsst_classification/blob/master/data_summary.png)
 
 
 Types of models being tested:
