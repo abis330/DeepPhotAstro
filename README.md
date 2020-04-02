@@ -11,7 +11,7 @@ Required Python Packages:
 6. scikit-learn
 7. tensorflow
 8. keras
-9. pytorch\
+9. pytorch<br\>
 
 
 Required linux utilities:
