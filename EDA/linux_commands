@@ -1,0 +1,11 @@
+# to delete first line (d for delete and 1 for first line)
+sed 1d result.csv > temp.csv
+
+# to print last line in file
+awk 'END { print }' temp2.csv
+
+# to delete 2nd column in csv file (d for delete and the character - ',' after 'd' for delimiter in each line)
+cut -d, -f2 --complement temp.csv > temp1.csv
+
+# to add a column at beginning with row numbers in csv file
+awk '{print NR "," $0}' temp.csv > temp1.csv
