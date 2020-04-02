@@ -12,3 +12,6 @@ cut -d, -f2 --complement temp1.csv > training_indexed_sorted_detections_count.cs
 
 # to print last line in file
 awk 'END { print }' training_indexed_sorted_detections_count.csv
+
+# command to execute eda_test.gnu script
+gnuplot -p eda_test.gnu
