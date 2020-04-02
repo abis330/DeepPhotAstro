@@ -30,6 +30,10 @@ Data:
    2. test_set_metadata.csv
 
 
+Summary of Object Types:
+![Summary of Object Types](https://github.com/abinashsinha330/early_lsst_classification/data_summary.png)
+
+
 Types of models being tested:
 1. Plain RNN (using GRU-based RNN)
 2. LSTM
