@@ -21,8 +21,8 @@ Required linux utilities:
 Types of models being tested:
 1. Plain RNN (using GRU-based RNN)
 2. LSTM
-   a. Phased-LSTM
-   b. Time-LSTM
+   1. Phased-LSTM
+   2. Time-LSTM
 3. Self-Attention (Transformer's Encoder Architecture)
 4. Classical ML
 
