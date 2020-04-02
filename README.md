@@ -13,14 +13,14 @@ Required Python Packages:
 8. keras
 9. pytorch
 
-
+<br>
 Required linux utilities:
 1. awk
 2. sed
 3. cut
 4. gnuplot
 
-
+<br>
 Data:
 1. Training:
    1. training_set.csv
@@ -29,9 +29,9 @@ Data:
    1. test_set.csv
    2. test_set_metadata.csv
 
-
-Summary of Object Types:
-<img src="https://github.com/abinashsinha330/early_lsst_classification/blob/master/data_summary.png" width=500>
+<br>
+Summary of Object Types:<br>
+<img src="https://github.com/abinashsinha330/early_lsst_classification/blob/master/data_summary.png" width=600 align='middle'>
 
 Types of models being tested:
 1. Plain RNN (using GRU-based RNN)
