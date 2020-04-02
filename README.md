@@ -31,7 +31,7 @@ Data:
 
 
 Summary of Object Types:
-<img src="https://github.com/abinashsinha330/early_lsst_classification/blob/master/data_summary.png" width=500 align=middle>
+<img src="https://github.com/abinashsinha330/early_lsst_classification/blob/master/data_summary.png" width=500 align=left>
 
 Types of models being tested:
 1. Plain RNN (using GRU-based RNN)
