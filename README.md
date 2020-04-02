@@ -20,12 +20,12 @@ Required linux utilities:
 
 Types of models being tested:
 
-1. Plain RNN (using GRU-based RNN)
-2. LSTM
+1. Plain RNN (using GRU-based RNN) #/plain_rnn#
+2. LSTM #/lstm#
    a. Phased-LSTM
    b. Time-LSTM
-3. Self-Attention (Transformer's Encoder Architecture)
-4. Classical ML
+3. Self-Attention (Transformer's Encoder Architecture) #/self-attention#
+4. Classical ML #/classical-ml#
 
 Benchmark models being tested against:
 1. Avocado
