@@ -11,14 +11,14 @@ Required Python Packages:
 6. scikit-learn
 7. tensorflow
 8. keras
-9. pytorch<br/>
+9. pytorch
 
 
 Required linux utilities:
 1. awk
 2. sed
 3. cut
-4. gnuplot\
+4. gnuplot
 
 
 Data:
@@ -27,11 +27,11 @@ Data:
    2. training_set_metadata.csv
 2. Test:
    1. test_set.csv
-   2. test_set_metadata.csv\
+   2. test_set_metadata.csv
 
 
 Summary of Object Types:<br/>
-<img src="https://github.com/abinashsinha330/early_lsst_classification/blob/master/data_summary.png" width=600 align='middle'>\
+<img src="https://github.com/abinashsinha330/early_lsst_classification/blob/master/data_summary.png" width=600 align='middle'>
 
 
 Types of models being tested:
@@ -40,7 +40,7 @@ Types of models being tested:
    1. Phased-LSTM
    2. Time-LSTM
 3. Self-Attention (Transformer's Encoder Architecture)
-4. Classical ML\
+4. Classical ML
 
 
 Folders:
@@ -49,7 +49,7 @@ Folders:
 - **/self-attention**
 - **/classical_ml**
 - **/misc_experiments** contains other experiments understanding feasibility of an idea like active learning
-- **/data**\
+- **/data**
 
 
 Benchmark models being tested against:
