@@ -1,8 +1,8 @@
 1. https://pathmind.com/wiki/attention-mechanism-memory-network#ffn:
-  1. Feed forward networks treat features as independent (eg. feature os gender and siblings)
-  2. convolutional networks focus on relative location and proximity; 
-  3. RNNs and LSTMs have memory limitations and tend to read in one direction. 
-  4. In contrast to these, attention and the transformer can grab context about a word from distant parts of a sentence, 
+  1.  Feed forward networks treat features as independent (eg. feature os gender and siblings)
+  2.  convolutional networks focus on relative location and proximity; 
+  3.  RNNs and LSTMs have memory limitations and tend to read in one direction. 
+  4.  In contrast to these, attention and the transformer can grab context about a word from distant parts of a sentence, 
     both earlier and later than the word appears, in order to encode information to help us understand the word and 
     its role in the system called a sentence
 2. https://medium.com/inside-machine-learning/what-is-a-transformer-d07dd1fbec04
