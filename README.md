@@ -35,8 +35,8 @@ Summary of Object Types:<br/>
 
 
 Types of models being tested:
-1. Plain RNN (using GRU-based RNN)
-   <img src="https://github.com/abinashsinha330/early_lsst_classification/blob/master/plain_rnn/model.png" width=500 align='left'>
+1. Plain RNN (using GRU-based RNN):<br/>
+   <img src="https://github.com/abinashsinha330/early_lsst_classification/blob/master/plain_rnn/model.png" width=500 align='middle'>
 
 2. LSTM
    1. Phased-LSTM
