@@ -2,35 +2,32 @@
 Python package to train plain GRU-based RNN model for light curve classification
 """
 
-import numpy as np # linear algebra
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
+import numpy as np
 
-import os
-import math
-import copy
 import random
-
+import copy
+import math
 from keras.layers import *
 from keras.models import Model, load_model
-from keras.optimizers import Adam, Nadam, SGD
-from keras.callbacks import EarlyStopping, ModelCheckpoint, TensorBoard
-from keras.utils import to_categorical
-from keras.preprocessing.sequence import pad_sequences
+from keras.callbacks import EarlyStopping, ModelCheckpoint
 
 from sklearn.model_selection import train_test_split, KFold
 from sklearn.metrics import accuracy_score
-from sklearn.preprocessing import normalize
-from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import StratifiedKFold
+
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 import tensorflow as tf
 
-import plain_rnn_utils as utils
+import data_utils as utils
+import plain_rnn_utils as model_utils
 
 
-def append_data(list_x, list_y = None):
+def append_data(list_x, list_y=None):
     X = {}
     for k in list_x[0].keys():
-
         list = [x[k] for x in list_x]
         X[k] = np.concatenate(list)
 
@@ -60,8 +57,8 @@ def copy_sample(s, augmentate=True):
     c['hist'] = np.array(hist, dtype='float32')
     c['band'] = np.array(band, dtype='int32')
 
-    utils.set_intervals(c)
-            
+    model_utils.set_intervals(c)
+
     new_z = random.normalvariate(c['meta'][5], c['meta'][6] / 1.5)
     new_z = max(new_z, 0)
     new_z = min(new_z, 5)
@@ -70,13 +67,13 @@ def copy_sample(s, augmentate=True):
     c['meta'][5] = new_z
 
     # augmentation for flux
-    c['hist'][:,1] = np.random.normal(c['hist'][:,1], c['hist'][:,2] / 1.5)
+    c['hist'][:, 1] = np.random.normal(c['hist'][:, 1], c['hist'][:, 2] / 1.5)
 
     # multiply time intervals and wavelength to apply augmentation for red shift
-    c['hist'][:,0] *= dt
-    c['hist'][:,4] *= dt
-    c['hist'][:,5] *= dt
-    c['hist'][:,6] *= dt
+    c['hist'][:, 0] *= dt
+    c['hist'][:, 4] *= dt
+    c['hist'][:, 5] *= dt
+    c['hist'][:, 6] *= dt
 
     return c
 
@@ -104,13 +101,12 @@ def normalize_counts(samples, wtable, augmentate):
 
 
 def augmentate(samples, gl_count, exgl_count):
-
     res = []
     index = 0
     for s in samples:
 
         index += 1
-        
+
         if index % 1000 == 0:
             print('Augmenting {0}/{1}   '.format(index, len(samples)), end='\r')
 
@@ -129,12 +125,12 @@ train_data = pd.read_csv(utils.train_filepath)
 
 train_meta = pd.read_csv(utils.train_meta_filepath)
 
-wtable = utils.get_wtable(train_meta)
+wtable = model_utils.get_wtable(train_meta)
 
 
-def mywloss(y_true,y_pred):
-    yc=tf.clip_by_value(y_pred,1e-15,1-1e-15)
-    loss=-(tf.reduce_mean(tf.reduce_mean(y_true*tf.log(yc),axis=0)/wtable))
+def mywloss(y_true, y_pred):
+    yc = tf.clip_by_value(y_pred, 1e-15, 1 - 1e-15)
+    loss = -(tf.reduce_mean(tf.reduce_mean(y_true * tf.log(yc), axis=0) / wtable))
     return loss
 
 
@@ -167,40 +163,93 @@ def get_model(X, Y, size=80):
     return model
 
 
-def train_model(i, samples_train, samples_valid):
-
+def train_model(fold_idx, samples_train, samples_valid):
     samples_train += augmentate(samples_train, utils.augment_count, utils.augment_count)
     patience = 1000000 // len(samples_train) + 5
 
-    train_x, train_y = utils.get_keras_data(samples_train)
+    train_x, train_y = model_utils.get_keras_data(samples_train)
     del samples_train
-    valid_x, valid_y = utils.get_keras_data(samples_valid)
+    valid_x, valid_y = model_utils.get_keras_data(samples_valid)
     del samples_valid
 
     model = get_model(train_x, train_y)
 
-    if i == 1:
+    if fold_idx == 1:
         model.summary()
-    model.compile(optimizer=utils.optimizer, loss=mywloss, metrics=['accuracy'])
+    model.compile(optimizer=model_utils.optimizer, loss=mywloss, metrics=['accuracy'])
 
-    print('Training model {0} of {1}, Patience: {2}'.format(i, utils.num_models, patience))
-    filename = 'model_{0:03d}.hdf5'.format(i)
-    callbacks = [EarlyStopping(patience=patience, verbose=1), ModelCheckpoint(filename, save_best_only=True)]
+    print('Training model {0} of {1}, Patience: {2}'.format(fold_idx, utils.num_folds, patience))
+    filename = model_utils.model_filepath.format(fold_idx)
+    callbacks = [EarlyStopping(patience=patience, verbose=1, monitor='val_loss'), ModelCheckpoint(filename, save_best_only=True)]
 
-    model.fit(train_x, train_y, validation_data=(valid_x, valid_y), epochs=utils.max_epochs, batch_size=utils.batch_size, callbacks=callbacks, verbose=2)
+    model.fit(train_x, train_y, validation_data=(valid_x, valid_y), epochs=utils.max_epochs,
+              batch_size=utils.batch_size, callbacks=callbacks, verbose=2)
 
     model = load_model(filename, custom_objects={'mywloss': mywloss})
 
-    preds = model.predict(valid_x, batch_size=utils.batch_size2)
-    loss = utils.multi_weighted_logloss(valid_y, preds, wtable)
-    acc = accuracy_score(np.argmax(valid_y, axis=1), np.argmax(preds,axis=1))
-    print('MW Loss: {0:.4f}, Accuracy: {1:.4f}'.format(loss, acc))
+    # evaluate training dataset
+    train_loss, train_acc = evaluate(fold_idx, model, train_x, train_y, 'training')
+
+    # evaluate validation dataset
+    val_loss, val_acc = evaluate(fold_idx, model, valid_x, valid_y, 'validation')
+
+    return train_loss, train_acc, val_loss, val_acc
 
 
-samples = utils.get_data(train_data, train_meta, use_specz=utils.use_specz)
+def evaluate(fold_idx, model, x, y, datasetType):
+    preds = model.predict(x, batch_size=utils.batch_size2)
+    y_labels = np.argmax(y, axis=1)
+    pred_labels = np.argmax(preds, axis=1)
+    sess=tf.Session()
+    con_mat = tf.confusion_matrix(labels=y_labels, predictions=pred_labels).eval(session=sess)
+    con_mat_norm = np.around(con_mat.astype('float') / con_mat.sum(axis=1)[:, np.newaxis], decimals=2)
+    con_mat_norm = np.append(con_mat_norm, np.zeros([len(con_mat_norm),1]), 1)
+    con_mat_norm = np.append(con_mat_norm, np.zeros([1, con_mat_norm.shape[1]]), 0)
+    con_mat_df = pd.DataFrame(con_mat_norm, index=utils.classes, columns=utils.classes)
+    figure = plt.figure(figsize=(8, 8))
+    sns.heatmap(con_mat_df, annot=True, cmap='Blues')
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.title('{} Fold {} Dataset'.format(datasetType, fold_idx))
+    plt.savefig('{}_Fold_{}_confusion_matrix.png'.format(datasetType, fold_idx))
+    loss = model_utils.multi_weighted_logloss(y, preds, wtable)
+    acc = accuracy_score(y_labels, pred_labels)
+    print('{} Fold {} MW Loss: {}, Accuracy: {}'.format(datasetType, fold_idx, loss, acc))
+    true_and_preds_df = pd.DataFrame()
+    true_and_preds_df['true_label'] = y_labels.tolist()
+    true_and_preds_df['pred_label'] = pred_labels.tolist()
+    true_and_preds_df.to_csv('plain_rnn_{}_fold_{}_true_and_pred.csv'.format(datasetType, fold_idx), index=False)
 
-for i in range(1, utils.num_models+1):
+    return loss, acc
 
-    samples_train, samples_valid = train_test_split(samples, test_size=utils.valid_size, random_state=42*i)
-    train_model(i, samples_train, samples_valid)
 
+samples = model_utils.get_data(train_data, train_meta, use_specz=utils.use_specz)
+
+samples = np.asarray(samples)
+
+folds = StratifiedKFold(n_splits=utils.num_folds, shuffle=True, random_state=1)
+y = train_meta['target'].tolist()
+train_losses = list()
+train_accs = list()
+
+val_losses = list()
+val_accs = list()
+for fold_, (trn_, val_) in enumerate(folds.split(y, y)):
+    temp = type(val_)
+    val_x = samples[val_.tolist()].tolist()
+    trn_x = samples[trn_.tolist()].tolist()
+    training_loss, training_acc, valid_loss, valid_acc = train_model(fold_, trn_x, val_x)
+    train_losses.append(training_loss)
+    train_accs.append(training_acc)
+    val_losses.append(valid_loss)
+    val_accs.append(valid_acc)
+
+print('Training losses', train_losses)
+print('Training accuracies', train_accs)
+print('Validation losses', val_losses)
+print('Validation accuracies', val_accs)
+print('Mean training loss: {}'.format(np.mean(train_losses)))
+print('Mean validation loss: {}'.format(np.mean(val_losses)))
+print('Mean training accuracy: {}'.format(np.mean(train_accs)))
+print('Mean validation accuracy: {}'.format(np.mean(val_accs)))
