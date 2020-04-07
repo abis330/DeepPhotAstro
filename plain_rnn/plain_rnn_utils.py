@@ -6,9 +6,12 @@ import numpy as np
 import math
 import tensorflow as tf
 import pandas as pd
+import logging
 from keras.utils import to_categorical
 from keras.preprocessing.sequence import pad_sequences
+import warnings
 
+warnings.filterwarnings('ignore')
 
 augment_count = 25
 batch_size = 1000
@@ -36,10 +39,10 @@ passbands = np.array([357, 477, 621, 754, 871, 1004], dtype='float32')
 train_meta_filepath = 'training_set_metadata.csv'
 train_filepath = 'training_set.csv'
 
-test_data_filepath = 'test_set.csv'
-test_meta_filepath = 'sample_plasticc_test_metadata.csv'
+test_data_filepath = 'test_set.csv.zip'
+test_meta_filepath = 'plasticc_test_metadata.csv'
 
-model_filepath = 'model_001.hdf5'
+model_filepath = 'model_{}.hdf5'
 
 
 def set_intervals(sample):
@@ -148,7 +151,6 @@ def get_data(data_df, meta_df, extragalactic=None, use_specz=False, is_train_dat
         if len(samples) >= limit:
             break
 
-    print()
     return samples
 
 
