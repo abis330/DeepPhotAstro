@@ -2,7 +2,7 @@
 Repository containing code for experiments conducted with regards to early time-series classification of light curves to identify type of each astronomical source responsible for a particular light curve emissions
 
 Required Platforms:
-1. Databricks for data processing
+1. Databricks for data processing and visualization using Apache Spark
 
 
 Required Python Packages:
@@ -58,12 +58,14 @@ Types of models being tested:
 
 
 Folders:
-- **/plain_rnn**
+- **/gru_emb_sd_mp**
 - **/lstm**
 - **/self-attention**
 - **/classical_ml**
 - **/misc_experiments** contains other experiments understanding feasibility of an idea like active learning
 - **/data**
+- **/EDA**
+- **unsupervised_classification**
 
 
 Benchmark models being tested against:
