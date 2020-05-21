@@ -1,3 +1,10 @@
+"""
+Utility to pre-process data in training_set.csv after which now there are values of all six passbands (zero value if
+there was no flux value for that passband) on given day. Now, time granularity is on day basis after pre-processing
+
+Also, this is used to plot few of light curves.
+"""
+
 import argparse
 import numpy as np
 import pandas as pd
@@ -7,78 +14,6 @@ import matplotlib.pyplot as plt
 import data_utils as utils
 
 matplotlib.use('agg')
-
-
-# class DataLoader:
-#
-#     def __init__(self, file_root='data/SIMGEN_PUBLIC_DES_PROCESS/', test_fraction=0.94827, use_hostz=True,
-#                  time_shift=40,
-#                  gaussian_noise=1.0, keys=sn1a_keys, pattern='*', representative=True, additional_representative=0):
-#         self.time_shift = time_shift
-#         self.gaussian_noise = gaussian_noise
-#         data = load_data(file_root=file_root, test_fraction=test_fraction, use_hostz=use_hostz, keys=keys,
-#                          pattern=pattern,
-#                          representative=representative, additional_representative=additional_representative)
-#         self.train, self.test, (self.length_train, self.length_test, self.max_sequence_len, self.num_classes) = data
-
-# def _random_missing(self, t, flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z,
-#                     truncate_days):
-#     # Imputes missing values with random value between min and max
-#     new_flux_values = flux_values
-#     new_flux_values += flux_min + tf.random_uniform(tf.shape(flux_values), minval=0, maxval=1) * (
-#             flux_max - flux_min)
-#     return t, new_flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z, truncate_days
-#
-# def _mean_missing(self, t, flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z,
-#                   truncate_days):
-#     # Imputes missing values witn mean value between min and max
-#     new_flux_values = flux_values
-#     new_flux_values += flux_min + 0.5 * (flux_max - flux_min)
-#     return t, new_flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z, truncate_days
-#
-# def _add_noise(self, t, flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z,
-#                truncate_days):
-#     # Add Gaussian noise
-#     new_flux_values = flux_values
-#     new_flux_values += tf.random_normal(tf.shape(flux_errors), mean=0, stddev=self.gaussian_noise) * flux_errors
-#     return t, new_flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z, truncate_days
-#
-# def _shift_time(self, t, flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z,
-#                 truncate_days):
-#     # Shifts the time by a random offset
-#     shifted_t = t + tf.random_uniform([1], minval=-self.time_shift, maxval=self.time_shift)
-#     return shifted_t, flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z, truncate_days
-#
-# def _truncate(self, t, flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z,
-#               truncate_days):
-#     # Truncates the lightcurve
-#     new_sequence_length = tf.random_shuffle(truncate_days)[0]
-#     return t, flux_values, flux_errors, flux_min, flux_max, additional, new_sequence_length, labels, z, truncate_days
-#
-# def get_dataset(self, batch_size=32, test_as_train=False):
-#
-#     train_dataset = tf.data.Dataset.from_tensor_slices(self.train)
-#
-#     # if augment:
-#     #     train_dataset = train_dataset.map(self._shift_time)
-#     #     train_dataset = train_dataset.map(self._random_missing)
-#     #     train_dataset = train_dataset.map(self._add_noise)
-#     #     train_dataset = train_dataset.map(self._truncate)
-#
-#     train_dataset = train_dataset.batch(batch_size)
-#     train_dataset = train_dataset.shuffle(buffer_size=100)
-#
-#     if test_as_train:
-#         test_dataset = tf.data.Dataset.from_tensor_slices(self.train)
-#     else:
-#         test_dataset = tf.data.Dataset.from_tensor_slices(self.test)
-#
-#     # if augment:
-#     #     test_dataset = test_dataset.map(self._mean_missing)
-#
-#     test_dataset = test_dataset.batch(1000)
-#
-#     return train_dataset, test_dataset
 
 
 def pad_sequences(sequences, maxlen=None, dtype='int32',
@@ -172,79 +107,6 @@ def create_colourband_array(ind, arr, err_arr, temp_arr, err_temp_arr):
         err_temp_arr.append(err_temp[0])
         out = True
     return temp_arr, err_temp_arr, out
-
-
-# def test_data(pattern='*'):
-#     loader = DataLoader(pattern=pattern, test_fraction=0.0)
-#     train_dataset, test_dataset = loader.get_dataset(test_as_train=True)
-#
-#     iterator = tf.data.Iterator.from_structure(train_dataset.output_types,
-#                                                train_dataset.output_shapes)
-#     next_values = iterator.get_next()
-#
-#     sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
-#
-#     train_init_op = iterator.make_initializer(train_dataset)
-#     test_init_op = iterator.make_initializer(test_dataset)
-#
-#     nrows = 3
-#     ncolumns = 5
-#
-#     fig, axes = plt.subplots(nrows=nrows, ncols=ncolumns, sharex=True, sharey=True, figsize=(7, 4))
-#     fig.tight_layout()
-#     plt.subplots_adjust(wspace=0, hspace=0)
-#
-#     # Training data
-#     for row in range(0, nrows):
-#         for column in range(0, ncolumns):
-#             sess.run(train_init_op)
-#             t, flux_values, _, _, _, additional, sequence_length, labels, z, _ = sess.run(next_values)
-#             t_plot = t[0, 0:sequence_length[0], 0]
-#             flux_plot = flux_values[0, 0:sequence_length[0], :]
-#             ax = axes[row, column]
-#             ax.set_xlim([0, 150])
-#             ax.set_ylim([-25, 100])
-#             ax.set_xticks([0, 50, 100])
-#             ax.set_yticks([0, 25, 50, 75, 100])
-#             ax.set_xlabel('Time (days)', fontsize=7)
-#             if column == 0:
-#                 ax.set_ylabel('Flux', fontsize=7)
-#             ax.text(75.0, 60.0, 'Epoch: %s' % (row * ncolumns + column + 1), fontsize=7)
-#             ax.text(75.0, 80.0, 'ID: %s' % pattern, fontsize=7)
-#             ax.plot(t_plot, flux_plot[:, 0], color='green')
-#             ax.plot(t_plot, flux_plot[:, 1], color='red')
-#             ax.plot(t_plot, flux_plot[:, 2], color='black')
-#             ax.plot(t_plot, flux_plot[:, 3], color='blue')
-#             ax.tick_params(axis='both', which='major', labelsize=7)
-#     plt.savefig('data/plots/%s_training.pdf' % pattern)
-#
-#     fig, axes = plt.subplots(nrows=nrows, ncols=ncolumns, sharex=True, sharey=True)
-#     fig.tight_layout()
-#     plt.subplots_adjust(wspace=0, hspace=0)
-#
-#     # Test data
-#     for row in range(0, nrows):
-#         for column in range(0, ncolumns):
-#             sess.run(test_init_op)
-#             t, flux_values, _, _, _, additional, sequence_length, labels, z, _ = sess.run(next_values)
-#             t_plot = t[0, 0:sequence_length[0], 0]
-#             flux_plot = flux_values[0, 0:sequence_length[0], :]
-#             ax = axes[row, column]
-#             ax.set_xlim([0, 150])
-#             ax.set_ylim([-25, 100])
-#             ax.set_xticks([0, 50, 100])
-#             ax.set_yticks([0, 25, 50, 75, 100])
-#             ax.set_xlabel('Time (days)', fontsize=7)
-#             if column == 0:
-#                 ax.set_ylabel('Flux', fontsize=7)
-#             ax.text(75.0, 60.0, 'Epoch: %s' % (row * ncolumns + column + 1), fontsize=7)
-#             ax.text(75.0, 80.0, 'ID: %s' % pattern, fontsize=7)
-#             ax.plot(t_plot, flux_plot[:, 0], color='green')
-#             ax.plot(t_plot, flux_plot[:, 1], color='red')
-#             ax.plot(t_plot, flux_plot[:, 2], color='black')
-#             ax.plot(t_plot, flux_plot[:, 3], color='blue')
-#             ax.tick_params(axis='both', which='major', labelsize=7)
-#     plt.savefig('data/plots/%s_test.pdf' % pattern)
 
 
 def preprocess(filename, grouping=1):
@@ -468,7 +330,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('-preprocess', action='store_true', default=True)
     parser.add_argument('-lightcurves', action='store_true', default=True)
-    parser.add_argument('-test', action='store_true', default=True)
     args = parser.parse_args()
 
     if args.preprocess:
@@ -476,6 +337,3 @@ if __name__ == '__main__':
 
     if args.lightcurves:
         plot_lightcurves(utils.train_filepath)
-
-    # if args.test:
-    #     test_data(args.pattern)
