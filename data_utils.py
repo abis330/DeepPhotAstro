@@ -2,9 +2,9 @@ import logging
 import numpy as np
 
 
-result_dir_path = ''
+result_dir_path = '/content/drive/My Drive/ra_astronomy/'
 train_meta_filename = 'training_set_metadata.csv'
-train_filename = 'sample_training_set.csv'
+train_filename = 'training_set.csv'
 modified = 'modified_'
 train_meta_filepath = result_dir_path + train_meta_filename
 train_filepath = result_dir_path + train_filename
@@ -15,7 +15,6 @@ test_data_filepath = 'test_set.csv'
 test_meta_filepath = 'plasticc_test_metadata.csv'
 predictions_file = 'predictions.csv'
 final_predictions_file = 'final_predictions.csv'
-
 
 test_chunksize = 5000000
 
