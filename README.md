@@ -40,6 +40,9 @@ Types of models being tested:
 
 2. LSTM
    1. Phased-LSTM
+      1. Variant 1: Here the inputs are only flux values and flux error values for each of the passbands (total 6 flux values and 6 flux error values)
+      2. Variant 2: Here the inputs are flux values, flux error values and source wavelengths (total 6 flux values, 6 flux error values, 6 source wavelengths where there is zero value when there is zero flux value for the same)
+      3. Variant 3: Inputs are flux values without pass band distinction, flux error values without pass band distinction, passband indicator (1, 2, 3, 4, 5, 6), source wavelengths (Here the validation accuracy is below 50% for 50 epochs and is not stable for training.
    2. Time-LSTM
 3. Self-Attention (Transformer's Encoder Architecture)
 4. Classical ML
