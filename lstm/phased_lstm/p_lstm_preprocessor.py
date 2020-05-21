@@ -267,7 +267,7 @@ def plot_lightcurves(filepath):
                 ax.set_xlim([0, 375])
                 ax.set_ylim([-100, 1500])
                 ax.tick_params(axis='both', which='major', labelsize=7)
-        plt.savefig('plots/%s.pdf' % ip)
+        plt.savefig(utils.result_dir_path + 'plots/%s.pdf' % ip)
 
 
 if __name__ == '__main__':
