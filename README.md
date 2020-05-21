@@ -35,7 +35,7 @@ Summary of Object Types:<br/>
 
 
 Types of models being tested:
-1. Plain RNN (using GRU-based RNN):<br/>
+1. GRU-based RNN with passbands embedded, spatial droput and max-pooling layers:<br/>
    <img src="https://github.com/abinashsinha330/early_lsst_classification/blob/master/plain_rnn/model.png" width=500 align='middle'>
 
 2. LSTM
