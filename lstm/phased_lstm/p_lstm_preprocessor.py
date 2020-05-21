@@ -16,49 +16,6 @@ import data_utils as utils
 matplotlib.use('agg')
 
 
-def pad_sequences(sequences, maxlen=None, dtype='int32',
-                  padding='pre', truncating='pre', value=-1.):
-    lengths = [len(s) for s in sequences]
-
-    nb_samples = len(sequences)
-    if maxlen is None:
-        maxlen = np.max(lengths)
-
-    # take the sample shape from the first non empty sequence
-    # checking for consistency in the main loop below.
-    sample_shape = tuple()
-    for s in sequences:
-        if len(s) > 0:
-            sample_shape = np.asarray(s).shape[1:]
-            break
-
-    x = (np.ones((nb_samples, maxlen) + sample_shape) * value).astype(dtype)
-    for idx, s in enumerate(sequences):
-        if len(s) == 0:
-            continue
-        if truncating == 'pre':
-            trunc = s[-maxlen:]
-        elif truncating == 'post':
-            trunc = s[:maxlen]
-        else:
-            raise ValueError('Truncating type "%s" not understood' % truncating)
-
-        # check `trunc` has expected shape
-        trunc = np.asarray(trunc, dtype=dtype)
-
-        if trunc.shape[1:] != sample_shape:
-            raise ValueError('Shape of sample %s of sequence at position %s is different from expected shape %s' %
-                             (trunc.shape[1:], idx, sample_shape))
-
-        if padding == 'post':
-            x[idx, :len(trunc)] = trunc
-        elif padding == 'pre':
-            x[idx, -len(trunc):] = trunc
-        else:
-            raise ValueError('Padding type "%s" not understood' % padding)
-    return x
-
-
 def to_categorical(y, nb_classes=None):
     if not nb_classes:
         nb_classes = np.max(y) + 1
