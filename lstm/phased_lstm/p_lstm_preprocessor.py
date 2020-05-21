@@ -1,0 +1,481 @@
+import argparse
+import numpy as np
+import pandas as pd
+from itertools import groupby
+import matplotlib
+import matplotlib.pyplot as plt
+import data_utils as utils
+
+matplotlib.use('agg')
+
+
+# class DataLoader:
+#
+#     def __init__(self, file_root='data/SIMGEN_PUBLIC_DES_PROCESS/', test_fraction=0.94827, use_hostz=True,
+#                  time_shift=40,
+#                  gaussian_noise=1.0, keys=sn1a_keys, pattern='*', representative=True, additional_representative=0):
+#         self.time_shift = time_shift
+#         self.gaussian_noise = gaussian_noise
+#         data = load_data(file_root=file_root, test_fraction=test_fraction, use_hostz=use_hostz, keys=keys,
+#                          pattern=pattern,
+#                          representative=representative, additional_representative=additional_representative)
+#         self.train, self.test, (self.length_train, self.length_test, self.max_sequence_len, self.num_classes) = data
+
+# def _random_missing(self, t, flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z,
+#                     truncate_days):
+#     # Imputes missing values with random value between min and max
+#     new_flux_values = flux_values
+#     new_flux_values += flux_min + tf.random_uniform(tf.shape(flux_values), minval=0, maxval=1) * (
+#             flux_max - flux_min)
+#     return t, new_flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z, truncate_days
+#
+# def _mean_missing(self, t, flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z,
+#                   truncate_days):
+#     # Imputes missing values witn mean value between min and max
+#     new_flux_values = flux_values
+#     new_flux_values += flux_min + 0.5 * (flux_max - flux_min)
+#     return t, new_flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z, truncate_days
+#
+# def _add_noise(self, t, flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z,
+#                truncate_days):
+#     # Add Gaussian noise
+#     new_flux_values = flux_values
+#     new_flux_values += tf.random_normal(tf.shape(flux_errors), mean=0, stddev=self.gaussian_noise) * flux_errors
+#     return t, new_flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z, truncate_days
+#
+# def _shift_time(self, t, flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z,
+#                 truncate_days):
+#     # Shifts the time by a random offset
+#     shifted_t = t + tf.random_uniform([1], minval=-self.time_shift, maxval=self.time_shift)
+#     return shifted_t, flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z, truncate_days
+#
+# def _truncate(self, t, flux_values, flux_errors, flux_min, flux_max, additional, sequence_length, labels, z,
+#               truncate_days):
+#     # Truncates the lightcurve
+#     new_sequence_length = tf.random_shuffle(truncate_days)[0]
+#     return t, flux_values, flux_errors, flux_min, flux_max, additional, new_sequence_length, labels, z, truncate_days
+#
+# def get_dataset(self, batch_size=32, test_as_train=False):
+#
+#     train_dataset = tf.data.Dataset.from_tensor_slices(self.train)
+#
+#     # if augment:
+#     #     train_dataset = train_dataset.map(self._shift_time)
+#     #     train_dataset = train_dataset.map(self._random_missing)
+#     #     train_dataset = train_dataset.map(self._add_noise)
+#     #     train_dataset = train_dataset.map(self._truncate)
+#
+#     train_dataset = train_dataset.batch(batch_size)
+#     train_dataset = train_dataset.shuffle(buffer_size=100)
+#
+#     if test_as_train:
+#         test_dataset = tf.data.Dataset.from_tensor_slices(self.train)
+#     else:
+#         test_dataset = tf.data.Dataset.from_tensor_slices(self.test)
+#
+#     # if augment:
+#     #     test_dataset = test_dataset.map(self._mean_missing)
+#
+#     test_dataset = test_dataset.batch(1000)
+#
+#     return train_dataset, test_dataset
+
+
+def pad_sequences(sequences, maxlen=None, dtype='int32',
+                  padding='pre', truncating='pre', value=-1.):
+    lengths = [len(s) for s in sequences]
+
+    nb_samples = len(sequences)
+    if maxlen is None:
+        maxlen = np.max(lengths)
+
+    # take the sample shape from the first non empty sequence
+    # checking for consistency in the main loop below.
+    sample_shape = tuple()
+    for s in sequences:
+        if len(s) > 0:
+            sample_shape = np.asarray(s).shape[1:]
+            break
+
+    x = (np.ones((nb_samples, maxlen) + sample_shape) * value).astype(dtype)
+    for idx, s in enumerate(sequences):
+        if len(s) == 0:
+            continue
+        if truncating == 'pre':
+            trunc = s[-maxlen:]
+        elif truncating == 'post':
+            trunc = s[:maxlen]
+        else:
+            raise ValueError('Truncating type "%s" not understood' % truncating)
+
+        # check `trunc` has expected shape
+        trunc = np.asarray(trunc, dtype=dtype)
+
+        if trunc.shape[1:] != sample_shape:
+            raise ValueError('Shape of sample %s of sequence at position %s is different from expected shape %s' %
+                             (trunc.shape[1:], idx, sample_shape))
+
+        if padding == 'post':
+            x[idx, :len(trunc)] = trunc
+        elif padding == 'pre':
+            x[idx, -len(trunc):] = trunc
+        else:
+            raise ValueError('Padding type "%s" not understood' % padding)
+    return x
+
+
+def to_categorical(y, nb_classes=None):
+    if not nb_classes:
+        nb_classes = np.max(y) + 1
+    Y = np.zeros((len(y), nb_classes), dtype='int32')
+    for i in range(len(y)):
+        Y[i, y[i]] = 1
+    return Y
+
+
+def index_min(values):
+    return min(range(len(values)), key=values.__getitem__)
+
+
+def time_collector(arr, frac=1):  # makes values on same day to be together
+    bestclustering = True
+    while bestclustering:
+        a = []
+        for key, group in groupby(arr, key=lambda n: n // (1. / frac)):
+            s = sorted(group)
+            a.append(np.sum(s) / len(s))
+        ind = []
+        i = 0
+        for key, group in groupby(arr, key=lambda n: n // (1. / frac)):
+            ind.append([])
+            for j in group:
+                ind[i].append(index_min(abs(j - np.array(arr))))
+            i += 1
+        if len([len(i) for i in ind if len(i) > 6]) != 0:
+            frac += 0.1
+        else:
+            bestclustering = False
+    return a, ind, frac
+
+
+def create_colourband_array(ind, arr, err_arr, temp_arr, err_temp_arr):
+    temp = [arr[ind[i]] for i in range(len(ind)) if arr[ind[i]] != 0]
+    err_temp = [err_arr[ind[i]] for i in range(len(ind)) if err_arr[ind[i]] != 0]
+    if len(temp) == 0:
+        temp_arr.append(0)
+        err_temp_arr.append(0)
+        out = True
+    elif len(temp) > 1:
+        out = False
+    else:
+        temp_arr.append(temp[0])
+        err_temp_arr.append(err_temp[0])
+        out = True
+    return temp_arr, err_temp_arr, out
+
+
+# def test_data(pattern='*'):
+#     loader = DataLoader(pattern=pattern, test_fraction=0.0)
+#     train_dataset, test_dataset = loader.get_dataset(test_as_train=True)
+#
+#     iterator = tf.data.Iterator.from_structure(train_dataset.output_types,
+#                                                train_dataset.output_shapes)
+#     next_values = iterator.get_next()
+#
+#     sess = tf.Session(config=tf.ConfigProto(log_device_placement=False))
+#
+#     train_init_op = iterator.make_initializer(train_dataset)
+#     test_init_op = iterator.make_initializer(test_dataset)
+#
+#     nrows = 3
+#     ncolumns = 5
+#
+#     fig, axes = plt.subplots(nrows=nrows, ncols=ncolumns, sharex=True, sharey=True, figsize=(7, 4))
+#     fig.tight_layout()
+#     plt.subplots_adjust(wspace=0, hspace=0)
+#
+#     # Training data
+#     for row in range(0, nrows):
+#         for column in range(0, ncolumns):
+#             sess.run(train_init_op)
+#             t, flux_values, _, _, _, additional, sequence_length, labels, z, _ = sess.run(next_values)
+#             t_plot = t[0, 0:sequence_length[0], 0]
+#             flux_plot = flux_values[0, 0:sequence_length[0], :]
+#             ax = axes[row, column]
+#             ax.set_xlim([0, 150])
+#             ax.set_ylim([-25, 100])
+#             ax.set_xticks([0, 50, 100])
+#             ax.set_yticks([0, 25, 50, 75, 100])
+#             ax.set_xlabel('Time (days)', fontsize=7)
+#             if column == 0:
+#                 ax.set_ylabel('Flux', fontsize=7)
+#             ax.text(75.0, 60.0, 'Epoch: %s' % (row * ncolumns + column + 1), fontsize=7)
+#             ax.text(75.0, 80.0, 'ID: %s' % pattern, fontsize=7)
+#             ax.plot(t_plot, flux_plot[:, 0], color='green')
+#             ax.plot(t_plot, flux_plot[:, 1], color='red')
+#             ax.plot(t_plot, flux_plot[:, 2], color='black')
+#             ax.plot(t_plot, flux_plot[:, 3], color='blue')
+#             ax.tick_params(axis='both', which='major', labelsize=7)
+#     plt.savefig('data/plots/%s_training.pdf' % pattern)
+#
+#     fig, axes = plt.subplots(nrows=nrows, ncols=ncolumns, sharex=True, sharey=True)
+#     fig.tight_layout()
+#     plt.subplots_adjust(wspace=0, hspace=0)
+#
+#     # Test data
+#     for row in range(0, nrows):
+#         for column in range(0, ncolumns):
+#             sess.run(test_init_op)
+#             t, flux_values, _, _, _, additional, sequence_length, labels, z, _ = sess.run(next_values)
+#             t_plot = t[0, 0:sequence_length[0], 0]
+#             flux_plot = flux_values[0, 0:sequence_length[0], :]
+#             ax = axes[row, column]
+#             ax.set_xlim([0, 150])
+#             ax.set_ylim([-25, 100])
+#             ax.set_xticks([0, 50, 100])
+#             ax.set_yticks([0, 25, 50, 75, 100])
+#             ax.set_xlabel('Time (days)', fontsize=7)
+#             if column == 0:
+#                 ax.set_ylabel('Flux', fontsize=7)
+#             ax.text(75.0, 60.0, 'Epoch: %s' % (row * ncolumns + column + 1), fontsize=7)
+#             ax.text(75.0, 80.0, 'ID: %s' % pattern, fontsize=7)
+#             ax.plot(t_plot, flux_plot[:, 0], color='green')
+#             ax.plot(t_plot, flux_plot[:, 1], color='red')
+#             ax.plot(t_plot, flux_plot[:, 2], color='black')
+#             ax.plot(t_plot, flux_plot[:, 3], color='blue')
+#             ax.tick_params(axis='both', which='major', labelsize=7)
+#     plt.savefig('data/plots/%s_test.pdf' % pattern)
+
+
+def preprocess(filename, grouping=1):
+    lightcurves_df = pd.read_csv(filename)
+
+    # group by the object id
+    lightcurves = lightcurves_df.groupby('object_id')
+    num_lightcurves = 0
+    object_id_arr = []
+    all_t = []
+    all_u_temp_arr = []
+    all_u_err_temp_arr = []
+    all_g_temp_arr = []
+    all_g_err_temp_arr = []
+    all_r_temp_arr = []
+    all_r_err_temp_arr = []
+    all_i_temp_arr = []
+    all_i_err_temp_arr = []
+    all_z_temp_arr = []
+    all_z_err_temp_arr = []
+    all_Y_temp_arr = []
+    all_Y_err_temp_arr = []
+    for lightcurve in lightcurves:
+        num_lightcurves += 1
+        obs = []
+        first_obs = None
+        for idx, row in lightcurve[1].iterrows():
+            u = g = r = i = z = Y = 0
+            u_error = g_error = r_error = i_error = z_error = Y_error = 0
+            if first_obs is None:
+                first_obs = float(row['mjd'])
+            if row['passband'] == 0:  # u
+                u = float(row['flux'])  # flux_val
+                u_error = float(row['flux_err'])  # flux_err
+            elif row['passband'] == 1:  # g
+                g = float(row['flux'])  # flux_val
+                g_error = float(row['flux_err'])  # flux_err
+            elif row['passband'] == 2:  # r
+                r = float(row['flux'])  # flux_val
+                r_error = float(row['flux_err'])  # flux_err
+            elif row['passband'] == 3:  # i
+                i = float(row['flux'])  # flux_val
+                i_error = float(row['flux_err'])  # flux_err
+            elif row['passband'] == 4:  # z
+                z = float(row['flux'])  # flux_val
+                z_error = float(row['flux_err'])  # flux_err
+            elif row['passband'] == 5:  # Y
+                Y = float(row['flux'])  # flux_val
+                Y_error = float(row['flux_err'])  # flux_err
+            else:
+                raise ValueError('Invalid passband value!')
+            obs.append(
+                [float(row['mjd'])] + [u, g, r, i, z, Y] + [u_error, g_error, r_error, i_error, z_error, Y_error])
+
+        t_arr = [obs[i][0] for i in range(len(obs))]  # time values in lightcurve
+        u_arr = [obs[i][1] for i in range(len(obs))]  # g flux values in lightcurve at each time point
+        u_err_arr = [obs[i][7] for i in range(len(obs))]
+        g_arr = [obs[i][2] for i in range(len(obs))]  # g flux values in lightcurve at each time point
+        g_err_arr = [obs[i][8] for i in range(len(obs))]  # # g flux_err values in lightcurve at each time point
+        r_arr = [obs[i][3] for i in range(len(obs))]
+        r_err_arr = [obs[i][9] for i in range(len(obs))]
+        i_arr = [obs[i][4] for i in range(len(obs))]
+        i_err_arr = [obs[i][10] for i in range(len(obs))]
+        z_arr = [obs[i][5] for i in range(len(obs))]
+        z_err_arr = [obs[i][11] for i in range(len(obs))]
+        Y_arr = [obs[i][6] for i in range(len(obs))]
+        Y_err_arr = [obs[i][11] for i in range(len(obs))]
+        correctplacement = True
+        frac = grouping
+        t = []
+        while correctplacement:
+            t, index, frac = time_collector(t_arr, frac)
+            u_temp_arr = []
+            u_err_temp_arr = []
+            g_temp_arr = []
+            g_err_temp_arr = []
+            r_temp_arr = []
+            r_err_temp_arr = []
+            i_temp_arr = []
+            i_err_temp_arr = []
+            z_temp_arr = []
+            z_err_temp_arr = []
+            Y_temp_arr = []
+            Y_err_temp_arr = []
+            tot = []
+            for i in range(len(index)):
+                u_temp_arr, u_err_temp_arr, ufail = create_colourband_array(index[i], u_arr, u_err_arr, u_temp_arr,
+                                                                            u_err_temp_arr)
+                g_temp_arr, g_err_temp_arr, gfail = create_colourband_array(index[i], g_arr, g_err_arr, g_temp_arr,
+                                                                            g_err_temp_arr)
+                r_temp_arr, r_err_temp_arr, rfail = create_colourband_array(index[i], r_arr, r_err_arr, r_temp_arr,
+                                                                            r_err_temp_arr)
+                i_temp_arr, i_err_temp_arr, ifail = create_colourband_array(index[i], i_arr, i_err_arr, i_temp_arr,
+                                                                            i_err_temp_arr)
+                z_temp_arr, z_err_temp_arr, zfail = create_colourband_array(index[i], z_arr, z_err_arr, z_temp_arr,
+                                                                            z_err_temp_arr)
+                Y_temp_arr, Y_err_temp_arr, Yfail = create_colourband_array(index[i], Y_arr, Y_err_arr, Y_temp_arr,
+                                                                            Y_err_temp_arr)
+                tot.append(ufail * gfail * rfail * ifail * zfail * Yfail)
+            if all(tot):
+                correctplacement = False
+            else:
+                frac += 0.1
+        print('Lightcurve {} done'.format(num_lightcurves + 1))
+        all_t = all_t + t
+        all_u_temp_arr = all_u_temp_arr + u_temp_arr
+        all_u_err_temp_arr = all_u_err_temp_arr + u_err_temp_arr
+        all_g_temp_arr = all_g_temp_arr + g_temp_arr
+        all_g_err_temp_arr = all_g_err_temp_arr + g_err_temp_arr
+        all_r_temp_arr = all_r_temp_arr + r_temp_arr
+        all_r_err_temp_arr = all_r_err_temp_arr + r_err_temp_arr
+        all_i_temp_arr = all_i_temp_arr + i_temp_arr
+        all_i_err_temp_arr = all_i_err_temp_arr + i_err_temp_arr
+        all_z_temp_arr = all_z_temp_arr + z_temp_arr
+        all_z_err_temp_arr = all_z_err_temp_arr + z_err_temp_arr
+        all_Y_temp_arr = all_Y_temp_arr + Y_temp_arr
+        all_Y_err_temp_arr = all_Y_err_temp_arr + Y_err_temp_arr
+
+        object_id_arr = object_id_arr + [lightcurve[0]] * len(t)
+
+    new_lightcurves_df = pd.DataFrame()
+    new_lightcurves_df['object_id'] = object_id_arr
+    new_lightcurves_df['mjd'] = all_t
+    new_lightcurves_df['u_flux'] = all_u_temp_arr
+    new_lightcurves_df['u_flux_err'] = all_u_err_temp_arr
+    new_lightcurves_df['g_flux'] = all_g_temp_arr
+    new_lightcurves_df['g_flux_err'] = all_g_err_temp_arr
+    new_lightcurves_df['r_flux'] = all_r_temp_arr
+    new_lightcurves_df['r_flux_err'] = all_r_err_temp_arr
+    new_lightcurves_df['i_flux'] = all_i_temp_arr
+    new_lightcurves_df['i_flux_err'] = all_i_err_temp_arr
+    new_lightcurves_df['z_flux'] = all_z_temp_arr
+    new_lightcurves_df['z_flux_err'] = all_z_err_temp_arr
+    new_lightcurves_df['Y_flux'] = all_Y_temp_arr
+    new_lightcurves_df['Y_flux_err'] = all_Y_err_temp_arr
+
+    new_lightcurves_df.to_csv(utils.modified_train_filepath, index=False)
+
+
+def plot_lightcurves(filepath, key_root=None):
+    labels = []
+    u_data, g_data, r_data, i_data, z_data, Y_data = [], [], [], [], [], []
+    ids = []
+    # sn_types = []
+    print('Loading light curves data')
+    lightcurves_df = pd.read_csv(filepath)
+    meta_df = pd.read_csv(utils.train_meta_filepath)
+    # group by the object id
+    lightcurves = lightcurves_df.groupby('object_id')
+    for lightcurve in lightcurves:
+        id = lightcurve[0]
+        ids.append(id)
+        meta = meta_df.loc[meta_df['object_id'] == id]
+        u, g, r, i, z, Y = [], [], [], [], [], []
+        max_flux = [0, 0, 0, 0, 0, 0]
+        first_obs = sim_type = None
+        for idx, row in lightcurve[1].iterrows():
+            if first_obs is None:
+                first_obs = float(row['mjd'])
+            obs = [float(row['mjd']) - first_obs, float(row['flux']), float(row['flux_err'])]
+            if row['passband'] == 0:  # u
+                u.append(obs)
+            elif row['passband'] == 1:  # g
+                g.append(obs)
+            elif row['passband'] == 2:  # r
+                r.append(obs)
+            elif row['passband'] == 3:  # i
+                i.append(obs)
+            elif row['passband'] == 4:  # z
+                z.append(obs)
+            elif row['passband'] == 5:  # Y
+                Y.append(obs)
+
+        labels.append(meta['target'].iloc[0])
+        # sn_types.append(sn_type)
+        u_data.append(u)
+        g_data.append(g)
+        r_data.append(r)
+        i_data.append(i)
+        z_data.append(z)
+        Y_data.append(Y)
+
+    labels = np.array(labels)
+    nrows = 1
+    ncolumns = 2
+    for ip in range(0, 2):
+        fig, axes = plt.subplots(nrows=nrows, ncols=ncolumns, sharex=True, sharey=True, figsize=(7, 4))
+        fig.tight_layout()
+        plt.subplots_adjust(wspace=0, hspace=0)
+        for row in range(0, nrows):
+            for column in range(0, ncolumns):
+                ax = axes[column]
+                ax.set_xticks([0, 100, 200, 300])
+                ax.set_yticks([0, 250, 500, 750, 1000])
+                ax.set_xlabel('Time (days)', fontsize=7)
+                if column == 0:
+                    ax.set_ylabel('Flux', fontsize=7)
+                i = ncolumns * row + column
+                data = np.array(u_data[i + ip])
+                ax.errorbar(data[:, 0], data[:, 1], data[:, 2], color='violet', linewidth=1)
+                data = np.array(g_data[i + ip])
+                ax.errorbar(data[:, 0], data[:, 1], data[:, 2], color='green', linewidth=1)
+                data = np.array(r_data[i + ip])
+                ax.errorbar(data[:, 0], data[:, 1], data[:, 2], color='red', linewidth=1)
+                data = np.array(i_data[i + ip])
+                ax.errorbar(data[:, 0], data[:, 1], data[:, 2], color='black', linewidth=1)
+                data = np.array(z_data[i + ip])
+                ax.errorbar(data[:, 0], data[:, 1], data[:, 2], color='blue', linewidth=1)
+                data = np.array(Y_data[i + ip])
+                ax.errorbar(data[:, 0], data[:, 1], data[:, 2], color='orange', linewidth=1)
+                ax.text(75.0, 60.0, 'Type: %s' % labels[i + 16 * ip], fontsize=7)
+                ax.text(75.0, 80.0, 'ID: %s' % str(ids[i + 16 * ip]).zfill(3), fontsize=7)
+                ax.set_xlim([0, 375])
+                ax.set_ylim([-100, 1500])
+                ax.tick_params(axis='both', which='major', labelsize=7)
+        plt.savefig('plots/%s.pdf' % ip)
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-preprocess', action='store_true', default=True)
+    parser.add_argument('-lightcurves', action='store_true', default=True)
+    parser.add_argument('-test', action='store_true', default=True)
+    args = parser.parse_args()
+
+    if args.preprocess:
+        preprocess(utils.train_filepath)
+
+    if args.lightcurves:
+        plot_lightcurves(utils.train_filepath)
+
+    # if args.test:
+    #     test_data(args.pattern)
