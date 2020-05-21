@@ -158,7 +158,7 @@ def preprocess(filename, grouping=1):
                 correctplacement = False
             else:
                 frac += 0.1
-        print('Lightcurve {} done'.format(num_lightcurves + 1))
+        print('{} Lightcurve for Object ID {} done'.format(num_lightcurves, lightcurve[0]))
         all_t = all_t + t
         all_u_temp_arr = all_u_temp_arr + u_temp_arr
         all_u_err_temp_arr = all_u_err_temp_arr + u_err_temp_arr
