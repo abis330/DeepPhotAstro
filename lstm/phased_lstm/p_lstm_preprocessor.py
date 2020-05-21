@@ -16,15 +16,6 @@ import data_utils as utils
 matplotlib.use('agg')
 
 
-def to_categorical(y, nb_classes=None):
-    if not nb_classes:
-        nb_classes = np.max(y) + 1
-    Y = np.zeros((len(y), nb_classes), dtype='int32')
-    for i in range(len(y)):
-        Y[i, y[i]] = 1
-    return Y
-
-
 def index_min(values):
     return min(range(len(values)), key=values.__getitem__)
 
@@ -203,11 +194,10 @@ def preprocess(filename, grouping=1):
     new_lightcurves_df.to_csv(utils.modified_train_filepath, index=False)
 
 
-def plot_lightcurves(filepath, key_root=None):
+def plot_lightcurves(filepath):
     labels = []
     u_data, g_data, r_data, i_data, z_data, Y_data = [], [], [], [], [], []
     ids = []
-    # sn_types = []
     print('Loading light curves data')
     lightcurves_df = pd.read_csv(filepath)
     meta_df = pd.read_csv(utils.train_meta_filepath)
@@ -218,8 +208,7 @@ def plot_lightcurves(filepath, key_root=None):
         ids.append(id)
         meta = meta_df.loc[meta_df['object_id'] == id]
         u, g, r, i, z, Y = [], [], [], [], [], []
-        max_flux = [0, 0, 0, 0, 0, 0]
-        first_obs = sim_type = None
+        first_obs = None
         for idx, row in lightcurve[1].iterrows():
             if first_obs is None:
                 first_obs = float(row['mjd'])
@@ -238,7 +227,6 @@ def plot_lightcurves(filepath, key_root=None):
                 Y.append(obs)
 
         labels.append(meta['target'].iloc[0])
-        # sn_types.append(sn_type)
         u_data.append(u)
         g_data.append(g)
         r_data.append(r)
